@@ -1,8 +1,9 @@
 <?php
 
-namespace Tests;
+namespace Tests\Feature;
 
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
 final class InertiaTest extends TestCase
 {

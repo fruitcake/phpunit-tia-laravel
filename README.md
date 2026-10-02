@@ -89,7 +89,7 @@ A changed file that a test is already linked to runs that test. For new files, t
 | New view that nothing uses yet | Fallback |
 | Any new view, while some view picks one at runtime (`@include($name)`, `<x-dynamic-component :component="$name">`, `@livewire($name)`) | Fallback |
 | A config or route file, `bootstrap/app.php`, a factory, a seeder, a schema dump, a translation or `.env.testing` | Every test |
-| Any other file in a test directory, such as the base `TestCase`, a trait or a fixture | Every test |
+| Any other test code, such as the base `TestCase`, a trait or a fixture | Every test |
 
 Everything from `setUp()` to `tearDown()` counts, so a request, factory or seeder in `setUp()` links its views and tables too.
 
@@ -177,7 +177,7 @@ Return the same collector instances every time, as above, so a collector can kee
 
 ### Files of your own that every test depends on
 
-Coverage doesn't see files outside `<source>`, so no test is linked to them. `ApplicationResolver` runs every test for the ones every Laravel app has (`ApplicationResolver::PATHS`), and for any file in the test directories of your `phpunit.xml` that is not a test itself. Add paths of your own, such as a script that tests run:
+Coverage doesn't see files outside `<source>`, so no test is linked to them. `ApplicationResolver` runs every test for the ones every Laravel app has (`ApplicationResolver::PATHS`), and for test code that is not a test itself: any other file in the test suite directories of your `phpunit.xml` or the `autoload-dev` paths of your `composer.json`, such as `tests/TestCase.php` beside `tests/Unit` and `tests/Feature`. Add paths of your own, such as a script that tests run:
 
 ```php
 use Fruitcake\PhpUnitTia\Laravel\LaravelResolver;

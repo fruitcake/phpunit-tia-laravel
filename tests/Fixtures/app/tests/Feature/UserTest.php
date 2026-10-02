@@ -1,9 +1,10 @@
 <?php
 
-namespace Tests;
+namespace Tests\Feature;
 
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
 final class UserTest extends TestCase
 {

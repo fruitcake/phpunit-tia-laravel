@@ -110,7 +110,46 @@ final class ApplicationResolverTest extends TestCase
         $resolver = new ApplicationResolver;
 
         $this->assertSame(['tests/Unit/TablesTest.php'], $resolver->resolve($edges, $root, 'tests/Feature/TestCase.php'));
-        $this->assertNull($resolver->resolve($edges, $root, 'tests/Support/Project.php'));
+        // Outside the suites, but in this package's autoload-dev.
+        $this->assertSame(['tests/Unit/TablesTest.php'], $resolver->resolve($edges, $root, 'tests/Support/Project.php'));
+        $this->assertNull($resolver->resolve($edges, $root, 'src/Links.php'));
+    }
+
+    #[Test]
+    public function a_base_test_case_beside_the_suites_runs_every_test(): void
+    {
+        // Laravel's layout: suites in tests/Unit and tests/Feature, the base
+        // TestCase and its helpers directly in tests/, autoloaded as Tests\.
+        $this->write('composer.json', json_encode(['autoload-dev' => ['psr-4' => ['Tests\\' => 'tests/']]]));
+        $resolver = new ApplicationResolver(testDirectories: ['tests/Unit', 'tests/Feature']);
+
+        $this->assertAffected(self::EVERYTHING, 'tests/TestCase.php', $resolver);
+        $this->assertAffected(self::EVERYTHING, 'tests/CreatesApplication.php', $resolver);
+        $this->assertAffected(self::EVERYTHING, 'tests/Concerns/SignsTokens.php', $resolver);
+    }
+
+    #[Test]
+    public function without_an_autoload_dev_mapping_only_the_suites_count(): void
+    {
+        $resolver = new ApplicationResolver(testDirectories: ['tests/Unit', 'tests/Feature']);
+
+        $this->assertAffected([], 'tests/TestCase.php', $resolver);
+        $this->assertAffected(self::EVERYTHING, 'tests/Feature/Concerns/SignsTokens.php', $resolver);
+    }
+
+    #[Test]
+    public function every_autoload_dev_mapping_counts_but_not_what_it_sits_in(): void
+    {
+        $this->write('composer.json', json_encode(['autoload-dev' => [
+            'psr-4' => ['Tests\\' => 'tests/', 'Modules\\Billing\\Tests\\' => ['./modules/Billing/tests/']],
+            'files' => ['tests/helpers.php'],
+        ]]));
+        $resolver = new ApplicationResolver(testDirectories: ['tests/Unit', 'modules/Billing/tests/Feature']);
+
+        $this->assertAffected(self::EVERYTHING, 'modules/Billing/tests/BillingTestCase.php', $resolver);
+        $this->assertAffected(self::EVERYTHING, 'tests/helpers.php', $resolver);
+        // The module itself is application code.
+        $this->assertAffected([], 'modules/Billing/src/Payment.php', $resolver);
     }
 
     #[Test]

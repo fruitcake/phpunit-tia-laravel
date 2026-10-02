@@ -29,7 +29,7 @@ final class Result
         $skipped = [];
 
         foreach ((new SimpleXMLElement($xml))->xpath('//testcase') ?: [] as $case) {
-            $id = substr((string) $case['class'], strlen('Tests\\')).'::'.$case['name'];
+            $id = substr((string) strrchr('\\'.$case['class'], '\\'), 1).'::'.$case['name'];
 
             if (isset($case->skipped)) {
                 $skipped[] = $id;

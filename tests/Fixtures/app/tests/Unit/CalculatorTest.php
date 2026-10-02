@@ -1,9 +1,10 @@
 <?php
 
-namespace Tests;
+namespace Tests\Unit;
 
 use App\Calculator;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
 final class CalculatorTest extends TestCase
 {

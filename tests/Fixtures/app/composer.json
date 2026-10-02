@@ -1,0 +1,16 @@
+{
+    "name": "fruitcake/phpunit-tia-laravel-fixture",
+    "description": "The app the end-to-end tests run. It uses the package's vendor directory; this file only describes its autoloading, as a Laravel app's would.",
+    "type": "project",
+    "private": true,
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    }
+}
