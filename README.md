@@ -90,6 +90,8 @@ A changed file that a test is already linked to runs that test. For new files, t
 | New partial, Blade component or Livewire component | The tests of the views, `app/` classes and route files that use it, directly or through other views |
 | New view that nothing uses yet | Fallback |
 | Any new view, while some view picks one at runtime (`@include($name)`, `<x-dynamic-component :component="$name">`, `@livewire($name)`) | Fallback |
+| A class with no executable lines (an enum with only cases, an interface, a class with only constants) | The tests of the files that name it: through `use`, its full name (also as a string), or its short name in the same namespace |
+| A new class that nothing names yet | Fallback |
 | A config or route file, `bootstrap/app.php`, a factory, a seeder, a schema dump, a translation or `.env.testing` | Every test |
 | Any other test code, such as the base `TestCase`, a trait or a fixture | Every test |
 
@@ -194,10 +196,11 @@ return [
 
 ### Choosing how new files are resolved
 
-`LaravelResolver` combines `ApplicationResolver`, `MigrationResolver` and `ViewResolver` from `Fruitcake\PhpUnitTia\Laravel\Resolvers`, in that order. Register them separately to leave one out or to put a resolver of your own between them. Each implements phpunit-tia's `EdgeAwareResolver`:
+`LaravelResolver` combines `ApplicationResolver`, `MigrationResolver`, `ViewResolver` and `ClassResolver` from `Fruitcake\PhpUnitTia\Laravel\Resolvers`, in that order. Register them separately to leave one out or to put a resolver of your own between them. Each implements phpunit-tia's `EdgeAwareResolver`:
 
 ```php
 use Fruitcake\PhpUnitTia\Laravel\Resolvers\ApplicationResolver;
+use Fruitcake\PhpUnitTia\Laravel\Resolvers\ClassResolver;
 use Fruitcake\PhpUnitTia\Laravel\Resolvers\MigrationResolver;
 use Fruitcake\PhpUnitTia\Laravel\Resolvers\ViewResolver;
 
@@ -207,6 +210,7 @@ return [
         new MigrationResolver(['database/migrations', 'modules/*/database/migrations']),
         App\Testing\TranslationResolver::class,
         ViewResolver::class,
+        ClassResolver::class,
     ],
 ];
 ```

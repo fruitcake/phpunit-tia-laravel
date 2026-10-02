@@ -4,11 +4,6 @@ declare(strict_types=1);
 
 namespace Fruitcake\PhpUnitTia\Laravel;
 
-use FilesystemIterator;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
-use SplFileInfo;
-
 /**
  * Which files use a view, read from the source of resources/views, app/ and
  * routes/. For a view no test rendered yet, such as a new partial, these
@@ -207,7 +202,7 @@ final class ViewReferences
 
         $this->usedBy = [];
 
-        foreach ($this->sources(self::VIEWS, '.blade.php') as $view => $source) {
+        foreach (SourceFiles::in($this->projectRoot, self::VIEWS, '.blade.php') as $view => $source) {
             $references = BladeReferences::parse($source);
 
             if ($references['dynamic']) {
@@ -235,7 +230,7 @@ final class ViewReferences
 
         $this->literals = [];
 
-        foreach ([...$this->sources('app/', '.php'), ...$this->sources('routes/', '.php')] as $file => $source) {
+        foreach ([...SourceFiles::in($this->projectRoot, 'app', '.php'), ...SourceFiles::in($this->projectRoot, 'routes', '.php')] as $file => $source) {
             preg_match_all('/\'([^\'\\\\\n]{1,200})\'|"([^"\\\\\n$]{1,200})"/', $source, $matches);
 
             foreach (array_unique(array_filter([...$matches[1], ...$matches[2]])) as $literal) {
@@ -244,40 +239,5 @@ final class ViewReferences
         }
 
         return $this->literals;
-    }
-
-    /**
-     * @return array<string, string> project-relative path => source
-     */
-    private function sources(string $directory, string $suffix): array
-    {
-        $root = rtrim($this->projectRoot, '/').'/';
-
-        if (! is_dir($root.$directory)) {
-            return [];
-        }
-
-        $sources = [];
-        $files = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($root.$directory, FilesystemIterator::SKIP_DOTS),
-        );
-
-        foreach ($files as $file) {
-            assert($file instanceof SplFileInfo);
-
-            if (! $file->isFile() || ! str_ends_with($file->getPathname(), $suffix)) {
-                continue;
-            }
-
-            $source = @file_get_contents($file->getPathname());
-
-            if ($source !== false) {
-                $sources[substr($file->getPathname(), strlen($root))] = $source;
-            }
-        }
-
-        ksort($sources);
-
-        return $sources;
     }
 }
