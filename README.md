@@ -23,11 +23,13 @@ New files no test has used yet are resolved too. A new migration runs the tests 
 
 Four steps cover a regular Laravel app, including Livewire and Inertia.
 
-**1. Install the package.** It brings in phpunit-tia itself.
+**1. Install the package** together with phpunit-tia:
 
 ```shell
-composer require --dev fruitcake/phpunit-tia-laravel
+composer require --dev fruitcake/phpunit-tia-laravel:dev-main jasonmccreary/phpunit-tia:dev-main
 ```
+
+For now, both have to come from `dev-main`. This package relies on parts of phpunit-tia that are merged but not yet in a tagged release, and has no release of its own yet. Composer only installs a development version when your project asks for it directly, not when another package does, so phpunit-tia has to be in the command too. Once both are tagged, `composer require --dev fruitcake/phpunit-tia-laravel` will be enough.
 
 **2. Register the extension** in `phpunit.xml`:
 
