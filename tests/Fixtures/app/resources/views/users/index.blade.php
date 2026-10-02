@@ -1,0 +1,2 @@
+<x-avatar />
+<ul></ul>
