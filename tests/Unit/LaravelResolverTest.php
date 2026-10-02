@@ -55,6 +55,31 @@ final class LaravelResolverTest extends TestCase
     }
 
     #[Test]
+    public function a_new_migration_runs_only_the_tests_that_query_its_table(): void
+    {
+        // `audits` is created by a migration that also alters `users`, so the
+        // Queries collector linked every test that queries `users` to it.
+        $this->write('database/migrations/2024_01_05_create_audits_table.php', self::migration("Schema::create('audits', fn () => null);\nSchema::table('users', fn () => null);"));
+        $this->write('database/migrations/2024_01_06_add_note_to_audits.php', self::migration("Schema::table('audits', fn () => null);"));
+        // Added after the baseline: no test is linked to it yet.
+        $this->write('database/migrations/2024_01_07_add_index_to_audits.php', self::migration("Schema::table('audits', fn () => null);"));
+        $this->write('database/migrations/2024_02_01_add_user_to_audits.php', self::migration("Schema::table('audits', fn () => null);"));
+        $this->write('database/migrations/2024_02_02_add_audit_to_invoices.php', self::migration("Schema::table('audits', fn () => null);\nSchema::table('invoices', fn () => null);"));
+
+        $audits = ['database/migrations/2024_01_05_create_audits_table.php', 'database/migrations/2024_01_06_add_note_to_audits.php'];
+        $links = [
+            'tests/UserTest.php' => ['database/migrations/2024_01_05_create_audits_table.php'],
+            'tests/AuditTest.php' => $audits,
+            'tests/AuditUserTest.php' => [...$audits, 'database/migrations/2024_01_01_create_users_table.php'],
+        ];
+        $affected = fn (string $changed): array => $this->sorted($this->graph(new LaravelResolver, $links)->affected([$changed]));
+
+        $this->assertSame(['tests/AuditTest.php', 'tests/AuditUserTest.php'], $affected('database/migrations/2024_02_01_add_user_to_audits.php'));
+        // Across tables, the tests of each.
+        $this->assertSame(['tests/AuditTest.php', 'tests/AuditUserTest.php', 'tests/InvoiceTest.php'], $affected('database/migrations/2024_02_02_add_audit_to_invoices.php'));
+    }
+
+    #[Test]
     public function a_migration_of_a_new_table_runs_nothing(): void
     {
         $this->write('database/migrations/2024_02_01_create_audits_table.php', self::migration("Schema::create('audits', fn () => null);"));
@@ -235,7 +260,10 @@ final class LaravelResolverTest extends TestCase
         $this->assertSame($expected, $affected);
     }
 
-    private function graph(EdgeAwareResolver $resolver): Graph
+    /**
+     * @param  array<string, list<string>>  $links  test file => more project-relative files
+     */
+    private function graph(EdgeAwareResolver $resolver, array $links = []): Graph
     {
         $graph = new Graph($this->root);
         $graph->setTestPaths(new TestPaths(directories: ['tests'], files: [], suffixes: ['Test.php']));
@@ -245,9 +273,27 @@ final class LaravelResolverTest extends TestCase
         $graph->link('tests/UserTest.php', $this->root.'/database/migrations/2024_01_01_create_users_table.php');
         $graph->link('tests/UserTest.php', $this->root.'/resources/views/users/index.blade.php');
         $graph->link('tests/ModuleTest.php', $this->root.'/modules/Billing/migrations/2024_01_03_create_payments_table.php');
+
+        foreach ($links as $test => $files) {
+            foreach ($files as $file) {
+                $graph->link($test, $this->root.'/'.$file);
+            }
+        }
+
         $graph->setResolvers([$resolver, new FullSuite]);
 
         return $graph;
+    }
+
+    /**
+     * @param  list<string>  $files
+     * @return list<string>
+     */
+    private function sorted(array $files): array
+    {
+        sort($files);
+
+        return $files;
     }
 
     private static function migration(string $up): string

@@ -10,9 +10,9 @@ use JMac\Testing\PhpUnit\Tia\Contracts\EdgeAwareResolver;
 use JMac\Testing\PhpUnit\Tia\Contracts\Edges;
 
 /**
- * A new migration runs the tests linked to the earlier migrations of the
- * tables it touches. A table the migration creates has no earlier
- * migrations and no tests yet.
+ * A new migration runs the tests that query the tables it touches: the tests
+ * linked to every earlier migration of each table. A table the migration
+ * creates has no earlier migrations and no tests yet.
  *
  * A file counts as a migration when it is in one of $migrationPaths, or
  * anywhere else when it extends Migration. A migration it cannot read
@@ -65,21 +65,42 @@ final class MigrationResolver implements EdgeAwareResolver
         }
 
         $migrations = $this->migrations(array_values(array_unique([...$directories, dirname($path)])));
-        $earlier = [];
+        $tests = [];
 
         foreach ($migration->tables as $table) {
-            $others = array_values(array_diff($migrations->touching($table), [$path]));
+            $earlier = array_values(array_diff($migrations->touching($table), [$path]));
 
-            if ($others === [] && ! in_array($table, $migration->created, true)) {
+            if ($earlier === [] && ! in_array($table, $migration->created, true)) {
                 // Altered here, created somewhere this cannot see, such as a
                 // package: no earlier migration does not mean no tests.
                 return null;
             }
 
-            $earlier = [...$earlier, ...$others];
+            foreach (self::testsUsing($edges, $earlier) as $test) {
+                $tests[$test] = true;
+            }
         }
 
-        return LinkedTests::toAny($edges, $earlier);
+        return array_map(strval(...), array_keys($tests));
+    }
+
+    /**
+     * The tests that query a table: those linked to every earlier migration
+     * of it. The Queries collector links a test to all migrations of each
+     * table it queries, so a migration that also touches another table is
+     * linked to that table's tests too; the intersection leaves them out.
+     *
+     * A migration no test is linked to yet, such as one added after the
+     * baseline, takes no part, or it would leave nothing in common.
+     *
+     * @param  list<string>  $migrations
+     * @return list<string>
+     */
+    private static function testsUsing(Edges $edges, array $migrations): array
+    {
+        $linked = array_values(array_filter(array_map($edges->testsLinkedTo(...), $migrations)));
+
+        return $linked === [] ? [] : array_values(array_intersect(...$linked));
     }
 
     private static function isMigration(string $source): bool
