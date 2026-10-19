@@ -112,7 +112,7 @@ final class ApplicationResolverTest extends TestCase
         $this->assertSame(['tests/Unit/TablesTest.php'], $resolver->resolve($edges, $root, 'tests/Feature/TestCase.php'));
         // Outside the suites, but in this package's autoload-dev.
         $this->assertSame(['tests/Unit/TablesTest.php'], $resolver->resolve($edges, $root, 'tests/Support/Project.php'));
-        $this->assertNull($resolver->resolve($edges, $root, 'src/Links.php'));
+        $this->assertNull($resolver->resolve($edges, $root, 'src/UsedFiles.php'));
     }
 
     #[Test]

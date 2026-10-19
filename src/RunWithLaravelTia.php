@@ -8,11 +8,14 @@ use JMac\Testing\PhpUnit\Tia\Traits\RunWithTia;
 
 /**
  * Everything a Laravel base TestCase needs: phpunit-tia's RunWithTia, which
- * skips unaffected tests, and RecordsLaravelEdges, which links each test to
- * the views, migrations, Livewire components and Inertia pages it uses.
+ * skips unaffected tests, and RecordsUsedFiles, which records the views,
+ * migrations, Livewire components and Inertia pages each test uses.
+ *
+ * Use this trait rather than its parts. Once PHPUnit records test impact
+ * data itself, RunWithTia goes and this trait stays.
  */
 trait RunWithLaravelTia
 {
-    use RecordsLaravelEdges;
+    use RecordsUsedFiles;
     use RunWithTia;
 }

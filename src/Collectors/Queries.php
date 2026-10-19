@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Fruitcake\PhpUnitTia\Laravel\Collectors;
 
-use Fruitcake\PhpUnitTia\Laravel\Links;
 use Fruitcake\PhpUnitTia\Laravel\Migrations;
+use Fruitcake\PhpUnitTia\Laravel\UsedFiles;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Database\Events\QueryExecuted;
 
@@ -18,14 +18,14 @@ final class Queries implements Collector
 {
     private ?Migrations $migrations = null;
 
-    public function register(Application $app, Links $links): void
+    public function register(Application $app, UsedFiles $files): void
     {
         $migrations = null;
 
-        $app->make('events')->listen(QueryExecuted::class, function (QueryExecuted $query) use ($app, $links, &$migrations): void {
+        $app->make('events')->listen(QueryExecuted::class, function (QueryExecuted $query) use ($app, $files, &$migrations): void {
             $migrations ??= $this->migrations($app);
 
-            $links->add(...$migrations->forSql($query->sql));
+            $files->add(...$migrations->forSql($query->sql));
         });
     }
 

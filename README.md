@@ -13,6 +13,8 @@ With this package, each test is linked to:
 
 New files no test has used yet are resolved too. A new migration runs the tests that use the tables it changes. A new partial or component runs the tests of the views that use it.
 
+phpunit-tia is an in-between step until PHPUnit ships test impact analysis of its own; see [PHPUnit's own test impact analysis](#phpunits-own-test-impact-analysis).
+
 ## Requirements
 
 - PHP 8.4 and Laravel 13
@@ -125,7 +127,7 @@ A test that phpunit-tia skips never gets past that call, but `tearDown()` still 
 
 ### You already use `RunWithTia`
 
-Swap it for `RunWithLaravelTia`, or keep it and add `Fruitcake\PhpUnitTia\Laravel\RecordsLaravelEdges` next to it. The combined trait is exactly those two.
+Swap it for `RunWithLaravelTia`, which includes it. Use `RunWithLaravelTia` rather than its parts, so that moving to [PHPUnit's own test impact analysis](#phpunits-own-test-impact-analysis) does not touch your `TestCase`.
 
 ### Migrations outside `database/migrations`
 
@@ -143,10 +145,10 @@ return [
 
 ### Choosing what is recorded
 
-Recording is done by four collectors in `Fruitcake\PhpUnitTia\Laravel\Collectors`: `Views`, `Queries`, `Livewire` and `Inertia`. Livewire and Inertia do nothing when the package isn't installed. To leave one out or add your own, override `edgeCollectors()`:
+Recording is done by four collectors in `Fruitcake\PhpUnitTia\Laravel\Collectors`: `Views`, `Queries`, `Livewire` and `Inertia`. Livewire and Inertia do nothing when the package isn't installed. To leave one out or add your own, override `usedFileCollectors()`:
 
 ```php
-use Fruitcake\PhpUnitTia\Laravel\EdgeRecorder;
+use Fruitcake\PhpUnitTia\Laravel\Recorder;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -154,25 +156,25 @@ abstract class TestCase extends BaseTestCase
 
     private static ?array $collectors = null;
 
-    protected function edgeCollectors(): array
+    protected function usedFileCollectors(): array
     {
-        return self::$collectors ??= [...EdgeRecorder::defaultCollectors(), new FixtureFiles];
+        return self::$collectors ??= [...Recorder::defaultCollectors(), new FixtureFiles];
     }
 }
 ```
 
-A collector implements `Collector`. `register()` runs once per test with that test's application; add each file the test uses to `$links`, as an absolute or project-relative path:
+A collector implements `Collector`. `register()` runs once per test with that test's application; add each file the test uses to `$files`, as an absolute or project-relative path:
 
 ```php
 use Fruitcake\PhpUnitTia\Laravel\Collectors\Collector;
-use Fruitcake\PhpUnitTia\Laravel\Links;
+use Fruitcake\PhpUnitTia\Laravel\UsedFiles;
 use Illuminate\Contracts\Foundation\Application;
 
 final class FixtureFiles implements Collector
 {
-    public function register(Application $app, Links $links): void
+    public function register(Application $app, UsedFiles $files): void
     {
-        $app->make('events')->listen(FixtureLoaded::class, fn (FixtureLoaded $event) => $links->add($event->path));
+        $app->make('events')->listen(FixtureLoaded::class, fn (FixtureLoaded $event) => $files->add($event->path));
     }
 }
 ```
@@ -216,6 +218,14 @@ return [
 ```
 
 A resolver returns the test files a changed path affects, an empty list when it affects none, or `null` to leave the path to the next resolver.
+
+## PHPUnit's own test impact analysis
+
+phpunit-tia is an in-between step. [sebastianbergmann/phpunit#6919](https://github.com/sebastianbergmann/phpunit/pull/6919) adds test impact analysis to PHPUnit itself, and this package will move to it once that is released. What changes for an app:
+
+- `RunWithLaravelTia` and your own collectors stay. The collectors hand their files to PHPUnit's `registerFixture()` instead of to phpunit-tia, and phpunit-tia's skipping (`S`, `skippedByTia()`) goes: PHPUnit does not run the tests a change cannot affect.
+- `phpunit-tia.php` and the resolvers go. PHPUnit has no place for an extension that decides what a new file affects. Files every test depends on are watched in `phpunit.xml`, and a new migration is matched to the tests of its tables through a file per table that the tests register.
+- phpunit-tia's extension in `phpunit.xml` is replaced by PHPUnit's own options, such as `--record-test-impact-data` and `--only-impacted`.
 
 ## Caveats
 

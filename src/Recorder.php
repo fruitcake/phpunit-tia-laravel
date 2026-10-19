@@ -13,11 +13,11 @@ use Illuminate\Contracts\Foundation\Application;
 use JMac\Testing\PhpUnit\Tia\Tia;
 
 /**
- * Links a test to the Laravel files its coverage cannot see, through a set
- * of collectors. Ported from Pest's BladeEdges, TableTracker and
- * InertiaEdges, which record the same things for Pest's own TIA.
+ * Collects the Laravel files a test uses that its coverage cannot see,
+ * through a set of collectors. Ported from Pest's BladeEdges, TableTracker
+ * and InertiaEdges, which record the same things for Pest's own TIA.
  */
-final class EdgeRecorder
+final class Recorder
 {
     /** @var list<Collector>|null */
     private static ?array $defaults = null;
@@ -37,33 +37,24 @@ final class EdgeRecorder
      * Install the collectors on the application of the test about to run.
      *
      * @param  list<Collector>  $collectors
-     * @return Links|null where the test's files collect, or null when this
-     *                    run records nothing
+     * @return UsedFiles where the test's files collect
      */
-    public static function record(Application $app, array $collectors): ?Links
+    public static function record(Application $app, array $collectors): UsedFiles
     {
-        if (! Tia::isRecording()) {
-            return null;
-        }
-
-        $links = new Links;
+        $files = new UsedFiles;
 
         foreach ($collectors as $collector) {
-            $collector->register($app, $links);
+            $collector->register($app, $files);
         }
 
-        return $links;
+        return $files;
     }
 
     /**
-     * Hand a test's files to phpunit-tia. Call it from tearDown(): it only
-     * takes links once PHPUnit reports the test as prepared, which happens
-     * after setUp().
+     * Whether this run records which files each test uses.
      */
-    public static function link(?Links $links): void
+    public static function isRecording(): bool
     {
-        if ($links !== null) {
-            Tia::link(...$links->all());
-        }
+        return Tia::isRecording();
     }
 }

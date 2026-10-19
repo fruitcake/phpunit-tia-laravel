@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Fruitcake\PhpUnitTia\Laravel\Tests\Feature;
 
 use Fruitcake\PhpUnitTia\Laravel\Collectors\Views;
-use Fruitcake\PhpUnitTia\Laravel\Links;
+use Fruitcake\PhpUnitTia\Laravel\UsedFiles;
 use Livewire\Livewire;
 use Livewire\LivewireManager;
 use PHPUnit\Framework\Attributes\RequiresMethod;
@@ -47,14 +47,14 @@ final class ViewsCollectorTest extends TestCase
         $concrete = $this->app->getBindings()['view']['concrete'];
         $this->app->offsetUnset('view');
         $this->app->singleton('view', $concrete);
-        $links = new Links;
+        $files = new UsedFiles;
 
-        (new Views)->register($this->app, $links);
+        (new Views)->register($this->app, $files);
 
         $this->assertFalse($this->app->resolved('view'), 'registering should not build the view factory');
 
         $this->app->make('view')->make('partials.total')->render();
 
-        $this->assertSame([self::app('resources/views/partials/total.blade.php')], array_map(realpath(...), $links->all()));
+        $this->assertSame([self::app('resources/views/partials/total.blade.php')], array_map(realpath(...), $files->all()));
     }
 }

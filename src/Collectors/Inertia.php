@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Fruitcake\PhpUnitTia\Laravel\Collectors;
 
-use Fruitcake\PhpUnitTia\Laravel\Links;
+use Fruitcake\PhpUnitTia\Laravel\UsedFiles;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Foundation\Http\Events\RequestHandled;
 use Symfony\Component\HttpFoundation\Response;
@@ -21,7 +21,7 @@ use Throwable;
  */
 final class Inertia implements Collector
 {
-    public function register(Application $app, Links $links): void
+    public function register(Application $app, UsedFiles $files): void
     {
         if (! $app->bound('inertia.view-finder')) {
             return;
@@ -30,7 +30,7 @@ final class Inertia implements Collector
         // Per test, as the page paths are configuration.
         $pages = [];
 
-        $app->make('events')->listen(RequestHandled::class, static function (RequestHandled $event) use ($app, $links, &$pages): void {
+        $app->make('events')->listen(RequestHandled::class, static function (RequestHandled $event) use ($app, $files, &$pages): void {
             $component = self::component($event->response);
 
             if ($component === null) {
@@ -40,7 +40,7 @@ final class Inertia implements Collector
             $page = $pages[$component] ??= self::page($app, $component);
 
             if ($page !== null) {
-                $links->add($page);
+                $files->add($page);
             }
         });
     }

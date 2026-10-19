@@ -17,7 +17,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Runs the resolver through core's Graph::affected(), with the edges
- * RecordsLaravelEdges would have recorded linked by hand, and a FullSuite
+ * RecordsUsedFiles would have recorded linked by hand, and a FullSuite
  * resolver after it to show when a path is left to the fallback.
  */
 final class LaravelResolverTest extends TestCase
