@@ -19,7 +19,7 @@
         "php": "^8.4",
         "illuminate/contracts": "^13.0",
         "illuminate/support": "^13.0",
-        "jasonmccreary/phpunit-tia": "dev-main"
+        "jasonmccreary/phpunit-tia": "^0.5.0"
     },
     "require-dev": {
         "inertiajs/inertia-laravel": "^3.5",
