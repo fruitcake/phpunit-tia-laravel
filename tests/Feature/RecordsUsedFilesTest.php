@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Fruitcake\PhpUnitTia\Laravel\Tests\Feature;
 
-use Fruitcake\PhpUnitTia\Laravel\EdgeRecorder;
+use Fruitcake\PhpUnitTia\Laravel\Recorder;
 use Illuminate\Support\Facades\DB;
 use JMac\Testing\PhpUnit\Tia\Tia;
 use PHPUnit\Framework\Attributes\Test;
 
-final class RecordsLaravelEdgesTest extends TestCase
+final class RecordsUsedFilesTest extends TestCase
 {
     protected function beforeTestIsPrepared(): void
     {
@@ -44,7 +44,7 @@ final class RecordsLaravelEdgesTest extends TestCase
 
         $this->assertSame([], $this->results->links(), 'nothing is linked before tearDown()');
 
-        $this->tearDownRecordsLaravelEdges();
+        $this->tearDownRecordsUsedFiles();
 
         $this->assertContains(self::app('resources/views/users/index.blade.php'), array_map(realpath(...), $this->results->links()[self::TEST_FILE]));
     }
@@ -53,13 +53,19 @@ final class RecordsLaravelEdgesTest extends TestCase
     public function it_records_nothing_when_the_run_does_not_record(): void
     {
         Tia::recordInto(null);
+        $this->setUpRecordsUsedFiles();
 
-        $this->assertNull(EdgeRecorder::record($this->app, EdgeRecorder::defaultCollectors()));
+        view('users.index')->render();
+
+        // Recording again before the hand-off: anything collected would land.
+        Tia::recordInto($this->results);
+
+        $this->assertSame([], $this->linked());
     }
 
     #[Test]
     public function the_default_collectors_are_created_once(): void
     {
-        $this->assertSame(EdgeRecorder::defaultCollectors(), EdgeRecorder::defaultCollectors());
+        $this->assertSame(Recorder::defaultCollectors(), Recorder::defaultCollectors());
     }
 }

@@ -238,6 +238,19 @@ final class ImpactTest extends TestCase
     }
 
     #[Test]
+    public function a_changed_enum_without_executable_lines_runs_the_tests_of_its_users(): void
+    {
+        // Coverage never links app/Enums/Rounding.php; Calculator names it.
+        $this->project->write('app/Enums/Rounding.php', str_replace(
+            "case Down = 'down';",
+            "case Down = 'down';\n    case Even = 'even';",
+            (string) file_get_contents($this->project->path.'/app/Enums/Rounding.php'),
+        ));
+
+        $this->assertStringContainsString('LaravelResolver', $this->assertRan(['CalculatorTest::it_adds'])->output);
+    }
+
+    #[Test]
     public function a_changed_class_runs_the_tests_that_cover_it(): void
     {
         $this->project->write('app/Calculator.php', str_replace('$a + $b', '$b + $a', (string) file_get_contents($this->project->path.'/app/Calculator.php')));

@@ -5,13 +5,15 @@ declare(strict_types=1);
 namespace Fruitcake\PhpUnitTia\Laravel;
 
 /**
- * The files the running test used, collected until the test is torn down.
+ * The files the running test used that its line coverage cannot show,
+ * collected until the test is torn down.
  *
- * phpunit-tia only accepts links once PHPUnit reports the test as prepared,
- * which happens after setUp(). Holding them here until tearDown() keeps what
- * setUp() did too: a request, a seeder, a factory.
+ * Handing them over before tearDown() would lose part of them: phpunit-tia
+ * only accepts them once PHPUnit reports the test as prepared, which happens
+ * after setUp(). Holding them here keeps what setUp() did too: a request, a
+ * seeder, a factory.
  */
-final class Links
+final class UsedFiles
 {
     /** @var array<string, true> */
     private array $files = [];

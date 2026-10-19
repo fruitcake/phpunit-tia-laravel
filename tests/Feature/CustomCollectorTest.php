@@ -6,18 +6,18 @@ namespace Fruitcake\PhpUnitTia\Laravel\Tests\Feature;
 
 use Fruitcake\PhpUnitTia\Laravel\Collectors\Collector;
 use Fruitcake\PhpUnitTia\Laravel\Collectors\Queries;
-use Fruitcake\PhpUnitTia\Laravel\Links;
+use Fruitcake\PhpUnitTia\Laravel\UsedFiles;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
  * A TestCase that adds a collector of its own and leaves the Views
- * collector out, through edgeCollectors().
+ * collector out, through usedFileCollectors().
  */
 final class CustomCollectorTest extends TestCase
 {
-    protected function edgeCollectors(): array
+    protected function usedFileCollectors(): array
     {
         return [new Queries, new TranslationFiles];
     }
@@ -42,11 +42,11 @@ final class CustomCollectorTest extends TestCase
  */
 final class TranslationFiles implements Collector
 {
-    public function register(Application $app, Links $links): void
+    public function register(Application $app, UsedFiles $files): void
     {
-        $app->afterResolving('translator', static function ($translator) use ($app, $links): void {
-            $translator->handleMissingKeysUsing(static function (string $key) use ($app, $links): string {
-                $links->add($app->langPath('en/'.explode('.', $key)[0].'.php'));
+        $app->afterResolving('translator', static function ($translator) use ($app, $files): void {
+            $translator->handleMissingKeysUsing(static function (string $key) use ($app, $files): string {
+                $files->add($app->langPath('en/'.explode('.', $key)[0].'.php'));
 
                 return $key;
             });

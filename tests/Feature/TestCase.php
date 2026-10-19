@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace Fruitcake\PhpUnitTia\Laravel\Tests\Feature;
 
-use Fruitcake\PhpUnitTia\Laravel\EdgeRecorder;
-use Fruitcake\PhpUnitTia\Laravel\RecordsLaravelEdges;
+use Fruitcake\PhpUnitTia\Laravel\RecordsUsedFiles;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\ServiceProvider as InertiaServiceProvider;
 use JMac\Testing\PhpUnit\Tia\ResultCollector;
@@ -20,7 +19,7 @@ use Orchestra\Testbench\TestCase as Testbench;
  */
 abstract class TestCase extends Testbench
 {
-    use RecordsLaravelEdges;
+    use RecordsUsedFiles;
     use RefreshDatabase;
 
     protected const string APP = __DIR__.'/../Fixtures/app';
@@ -88,7 +87,7 @@ abstract class TestCase extends Testbench
      */
     protected function linked(): array
     {
-        EdgeRecorder::link($this->laravelEdges);
+        $this->registerUsedFiles(...$this->usedFiles?->all() ?? []);
 
         return array_map(
             static fn (string $file): string => realpath($file) ?: $file,

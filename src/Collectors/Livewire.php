@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Fruitcake\PhpUnitTia\Laravel\Collectors;
 
-use Fruitcake\PhpUnitTia\Laravel\Links;
+use Fruitcake\PhpUnitTia\Laravel\UsedFiles;
 use Illuminate\Contracts\Foundation\Application;
 use Livewire\Component;
 use Livewire\EventBus;
@@ -19,7 +19,7 @@ use Livewire\EventBus;
  */
 final class Livewire implements Collector
 {
-    public function register(Application $app, Links $links): void
+    public function register(Application $app, UsedFiles $files): void
     {
         if (! class_exists(EventBus::class) || ! $app->bound('livewire.finder')) {
             return;
@@ -28,11 +28,11 @@ final class Livewire implements Collector
         // Per test, as the component locations are configuration.
         $sources = [];
 
-        $app->make(EventBus::class)->on('render', static function (Component $component) use ($app, $links, &$sources): void {
+        $app->make(EventBus::class)->on('render', static function (Component $component) use ($app, $files, &$sources): void {
             $name = $component->getName();
 
             if (is_string($name) && $name !== '') {
-                $links->add(...$sources[$name] ??= self::sources($app, $name));
+                $files->add(...$sources[$name] ??= self::sources($app, $name));
             }
         });
     }

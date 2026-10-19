@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Fruitcake\PhpUnitTia\Laravel\Collectors;
 
-use Fruitcake\PhpUnitTia\Laravel\Links;
+use Fruitcake\PhpUnitTia\Laravel\UsedFiles;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
@@ -16,14 +16,14 @@ use Illuminate\Contracts\View\View;
  */
 final class Views implements Collector
 {
-    public function register(Application $app, Links $links): void
+    public function register(Application $app, UsedFiles $files): void
     {
         $compiled = rtrim((string) $app->make('config')->get('view.compiled'), '/');
 
         // A test that renders nothing should not pay for building the view
         // factory, so the composer waits until something resolves it.
-        $listen = static function (Factory $factory) use ($links, $compiled): void {
-            $factory->composer('*', static function (View $view) use ($links, $compiled): void {
+        $listen = static function (Factory $factory) use ($files, $compiled): void {
+            $factory->composer('*', static function (View $view) use ($files, $compiled): void {
                 if (! method_exists($view, 'getPath')) {
                     return;
                 }
@@ -33,7 +33,7 @@ final class Views implements Collector
                 // Generated views, such as a compiled Livewire component; the
                 // Livewire collector links their source instead.
                 if ($compiled === '' || ! str_starts_with($path, $compiled.'/')) {
-                    $links->add($path);
+                    $files->add($path);
                 }
             });
         };
