@@ -2,6 +2,7 @@
 
 namespace Tests;
 
+use App\Providers\AdminServiceProvider;
 use Fruitcake\PhpUnitTia\Laravel\RunWithLaravelTia;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
@@ -17,7 +18,7 @@ abstract class TestCase extends Testbench
 
     protected function getPackageProviders($app): array
     {
-        return [LivewireServiceProvider::class, InertiaServiceProvider::class];
+        return [LivewireServiceProvider::class, InertiaServiceProvider::class, AdminServiceProvider::class];
     }
 
     protected function defineEnvironment($app): void
