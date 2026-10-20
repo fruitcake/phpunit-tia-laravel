@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Fruitcake\PhpUnitTia\Laravel;
 
+use Closure;
 use Fruitcake\PhpUnitTia\Laravel\Collectors\Collector;
 use JMac\Testing\PhpUnit\Tia\Tia;
 
@@ -13,6 +14,9 @@ use JMac\Testing\PhpUnit\Tia\Tia;
  * migrations of the tables it queries, and the Livewire components and
  * Inertia pages it renders. Everything from setUp() to tearDown() counts.
  * tearDown() hands them over to be recorded with what the test executed.
+ *
+ * Booting the application is left out of the coverage, and the service
+ * providers it loaded are linked instead; see BootCoverage.
  */
 trait RecordsUsedFiles
 {
@@ -23,6 +27,30 @@ trait RecordsUsedFiles
         $this->usedFiles = $this->shouldRecordUsedFiles()
             ? Recorder::record($this->app, $this->usedFileCollectors())
             : null;
+
+        $this->usedFiles?->add(...BootCoverage::serviceProviders($this->app));
+    }
+
+    protected function refreshApplication(): void
+    {
+        $this->withoutBootCoverage(parent::refreshApplication(...));
+    }
+
+    /**
+     * Boots the application without its coverage; see BootCoverage. A
+     * TestCase with a refreshApplication() of its own wraps its boot in this.
+     *
+     * @param  Closure(): void  $boot
+     */
+    protected function withoutBootCoverage(Closure $boot): void
+    {
+        if (! $this->shouldRecordUsedFiles()) {
+            $boot();
+
+            return;
+        }
+
+        BootCoverage::leaveOut($this, $boot);
     }
 
     protected function tearDownRecordsUsedFiles(): void

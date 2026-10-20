@@ -20,12 +20,14 @@ use PHPUnit\Framework\TestCase;
  * (which uses <x-avatar>) and queries `users`; SeededTest touches `users`
  * only in setUp(); LivewireTest renders a single-file and a multi-file
  * Livewire component; InertiaTest renders the Invoices/Show page;
- * CalculatorTest covers app/Calculator.php only.
+ * CalculatorTest covers app/Calculator.php only. AdminServiceProvider
+ * registers the routes of InvoiceResource in every test, and AdminTest
+ * is the only test that opens one.
  */
 #[Group('end-to-end')]
 final class ImpactTest extends TestCase
 {
-    private const int TOTAL = 8;
+    private const int TOTAL = 9;
 
     private const array INVOICE_TESTS = ['InvoiceTest::it_shows_an_invoice', 'InvoiceTest::it_stores_an_invoice'];
 
@@ -34,7 +36,7 @@ final class ImpactTest extends TestCase
     private const array LIVEWIRE_TESTS = ['LivewireTest::it_counts', 'LivewireTest::it_steps'];
 
     private const array ALL = [
-        'CalculatorTest::it_adds', 'InertiaTest::it_renders_the_invoice_page', ...self::INVOICE_TESTS, ...self::LIVEWIRE_TESTS, ...self::USER_TESTS,
+        'AdminTest::it_lists_invoices', 'CalculatorTest::it_adds', 'InertiaTest::it_renders_the_invoice_page', ...self::INVOICE_TESTS, ...self::LIVEWIRE_TESTS, ...self::USER_TESTS,
     ];
 
     private static ?Project $recorded = null;
@@ -256,6 +258,30 @@ final class ImpactTest extends TestCase
         $this->project->write('app/Calculator.php', str_replace('$a + $b', '$b + $a', (string) file_get_contents($this->project->path.'/app/Calculator.php')));
 
         $this->assertRan(['CalculatorTest::it_adds']);
+    }
+
+    #[Test]
+    public function a_class_the_application_runs_while_it_boots_runs_only_the_tests_that_use_it(): void
+    {
+        $this->project->write('app/Admin/InvoiceResource.php', str_replace(
+            "return 'Invoices';",
+            "return 'Invoices overview';",
+            (string) file_get_contents($this->project->path.'/app/Admin/InvoiceResource.php'),
+        ));
+
+        $this->assertRan(['AdminTest::it_lists_invoices']);
+    }
+
+    #[Test]
+    public function a_changed_service_provider_runs_every_test(): void
+    {
+        $this->project->write('app/Providers/AdminServiceProvider.php', str_replace(
+            'InvoiceResource::routes();',
+            "InvoiceResource::routes();\n\n        \\Illuminate\\Support\\Facades\\Route::get('/admin', fn () => 'Admin');",
+            (string) file_get_contents($this->project->path.'/app/Providers/AdminServiceProvider.php'),
+        ));
+
+        $this->assertRan(self::ALL);
     }
 
     /**

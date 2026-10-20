@@ -92,10 +92,14 @@ A changed file that a test is already linked to runs that test. For new files, t
 | Any new view, while some view picks one at runtime (`@include($name)`, `<x-dynamic-component :component="$name">`, `@livewire($name)`) | Fallback |
 | A class with no executable lines (an enum with only cases, an interface, a class with only constants) | The tests of the files that name it: through `use`, its full name (also as a string), or its short name in the same namespace |
 | A new class that nothing names yet | Fallback |
+| A class that only runs while the application boots, such as the route registration of a Filament resource | The tests that use it after booting |
+| A service provider | Every test |
 | A config or route file, `bootstrap/app.php`, a factory, a seeder, a schema dump, a translation or `.env.testing` | Every test |
 | Any other test code, such as the base `TestCase`, a trait or a fixture | Every test |
 
 Everything from `setUp()` to `tearDown()` counts, so a request, factory or seeder in `setUp()` links its views and tables too.
+
+Booting the application is the exception. Every test boots it, and booting registers the routes of every Filament resource and page, so coverage would link each test to each of them, and a change to one resource would run the whole suite. The package leaves the boot out of the coverage and links the service providers it loaded instead.
 
 ## Customizing
 
@@ -122,6 +126,28 @@ abstract class TestCase extends BaseTestCase
 ```
 
 A test that phpunit-tia skips never gets past that call, but `tearDown()` still runs. Guard any of your own teardown that needs the application with `if (! $this->skippedByTia())`.
+
+### Your TestCase already has `refreshApplication()`
+
+The trait brings its own `refreshApplication()`, which boots the application without its coverage (see [What runs after a change](#what-runs-after-a-change)). Yours replaces it, so wrap your boot in `withoutBootCoverage()`:
+
+```php
+abstract class TestCase extends BaseTestCase
+{
+    use RunWithLaravelTia;
+
+    protected function refreshApplication(): void
+    {
+        $this->withoutBootCoverage(function (): void {
+            $this->app = $this->createApplication();
+
+            // ...
+        });
+    }
+}
+```
+
+Without it, every test is linked again to each class the boot runs, such as every Filament resource.
 
 ### You already use `RunWithTia`
 
